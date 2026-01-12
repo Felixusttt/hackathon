@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
 
 # JWT settings
-SECRET_KEY = os.getenv("JWT_SECRET", "your-secret-key-change-this-in-production-min-32-chars")
+SECRET_KEY = os.getenv("JWT_SECRET", "hackathon123")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 7
 
