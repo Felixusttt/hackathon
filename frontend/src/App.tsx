@@ -1,10 +1,14 @@
-// src/App.tsx
+// src/App.tsx (Updated with Authentication)
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Loader } from 'lucide-react';
 import { Tool, Review, Filters, ToolForm, ReviewForm } from './types';
+import { User } from './types/auth';
 import { toolsAPI, reviewsAPI } from './services/api';
-import Header from './components/Header';
+import { authAPI } from './services/authapi';
+import Login from './components/Login';
+import Register from './components/Register';
+import AuthHeader from './components/AuthHeader';
 import AdminNavigation from './components/AdminNavigation';
 import FiltersPanel from './components/FiltersPanel';
 import ToolCard from './components/ToolCard';
@@ -13,7 +17,14 @@ import ReviewModal from './components/ReviewModal';
 import ReviewModeration from './components/ReviewModeration';
 
 const App: React.FC = () => {
-  // State management
+  // Auth state
+  const [user, setUser] = useState<User | null>(null);
+  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // App state
   const [tools, setTools] = useState<Tool[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -43,6 +54,76 @@ const App: React.FC = () => {
     rating: 5,
     comment: ''
   });
+
+  // Check if user is already logged in on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const savedUser = authAPI.getSavedUser();
+        if (savedUser && authAPI.isAuthenticated()) {
+          setUser(savedUser);
+          setIsAdmin(savedUser.role === 'admin');
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // Handle login
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      setAuthLoading(true);
+      setAuthError('');
+      
+      const response = await authAPI.login({ email, password });
+      authAPI.saveAuth(response.token, response.user);
+      setUser(response.user);
+      setIsAdmin(response.user.role === 'admin');
+    } catch (err: any) {
+      setAuthError(err.message || 'Login failed. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Handle register
+  const handleRegister = async (name: string, email: string, password: string) => {
+    try {
+      setAuthLoading(true);
+      setAuthError('');
+      
+      const response = await authAPI.register({ name, email, password, confirmPassword: password });
+      authAPI.saveAuth(response.token, response.user);
+      setUser(response.user);
+      setIsAdmin(response.user.role === 'admin');
+    } catch (err: any) {
+      setAuthError(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+      setUser(null);
+      setIsAdmin(false);
+      setTools([]);
+      setReviews([]);
+    } catch (err) {
+      console.error('Logout failed:', err);
+      // Clear local storage anyway
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+    }
+  };
 
   // Fetch tools from API
   const fetchTools = async () => {
@@ -76,17 +157,19 @@ const App: React.FC = () => {
     }
   };
 
-  // Load tools on mount and when filters change
+  // Load tools when user is authenticated
   useEffect(() => {
-    fetchTools();
-  }, [filters]);
+    if (user) {
+      fetchTools();
+    }
+  }, [filters, user]);
 
   // Load reviews when admin switches to review view
   useEffect(() => {
-    if (isAdmin && activeView === 'reviews') {
+    if (isAdmin && activeView === 'reviews' && user) {
       fetchReviews();
     }
-  }, [isAdmin, activeView]);
+  }, [isAdmin, activeView, user]);
 
   // Add tool handler
   const handleAddTool = async () => {
@@ -179,7 +262,7 @@ const App: React.FC = () => {
       setLoading(true);
       await reviewsAPI.moderateReview(reviewId, action);
       await fetchReviews();
-      await fetchTools(); // Refresh tools to update ratings
+      await fetchTools();
       alert(`Review ${action} successfully!`);
     } catch (err) {
       alert('Failed to moderate review');
@@ -189,9 +272,53 @@ const App: React.FC = () => {
     }
   };
 
+  // Show loading while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <Loader className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  // Show login/register if not authenticated
+  if (!user) {
+    if (authView === 'login') {
+      return (
+        <Login
+          onLogin={handleLogin}
+          onSwitchToRegister={() => {
+            setAuthView('register');
+            setAuthError('');
+          }}
+          loading={authLoading}
+          error={authError}
+        />
+      );
+    } else {
+      return (
+        <Register
+          onRegister={handleRegister}
+          onSwitchToLogin={() => {
+            setAuthView('login');
+            setAuthError('');
+          }}
+          loading={authLoading}
+          error={authError}
+        />
+      );
+    }
+  }
+
+  // Main app (authenticated)
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      <Header isAdmin={isAdmin} onToggleAdmin={() => setIsAdmin(!isAdmin)} />
+      <AuthHeader 
+        user={user} 
+        isAdmin={isAdmin} 
+        onToggleAdmin={() => setIsAdmin(!isAdmin)} 
+        onLogout={handleLogout}
+      />
 
       {error && (
         <div className="max-w-7xl mx-auto px-4 py-4 animate-fade-in">

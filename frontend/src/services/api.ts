@@ -3,6 +3,15 @@
 import { API_BASE } from '../constants';
 import { Tool, Review, ToolForm } from '../types';
 
+// Helper function to get auth headers
+const getAuthHeaders = (): HeadersInit => {
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token && { 'Authorization': `Bearer ${token}` })
+  };
+};
+
 export const toolsAPI = {
   // Fetch all tools with optional filters
   async getTools(filters?: { category?: string; pricing?: string; min_rating?: number }): Promise<Tool[]> {
@@ -12,9 +21,15 @@ export const toolsAPI = {
     if (filters?.min_rating) params.append('min_rating', filters.min_rating.toString());
     
     const url = `${API_BASE}/tools${params.toString() ? '?' + params.toString() : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
     
-    if (!response.ok) throw new Error('Failed to fetch tools');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to fetch tools' }));
+      throw new Error(error.detail || 'Failed to fetch tools');
+    }
     return response.json();
   },
 
@@ -22,11 +37,14 @@ export const toolsAPI = {
   async addTool(toolData: ToolForm): Promise<Tool> {
     const response = await fetch(`${API_BASE}/tools`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(toolData)
     });
 
-    if (!response.ok) throw new Error('Failed to add tool');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to add tool' }));
+      throw new Error(error.detail || 'Failed to add tool');
+    }
     return response.json();
   },
 
@@ -34,21 +52,28 @@ export const toolsAPI = {
   async updateTool(id: string, toolData: Partial<ToolForm>): Promise<Tool> {
     const response = await fetch(`${API_BASE}/tools/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(toolData)
     });
 
-    if (!response.ok) throw new Error('Failed to update tool');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to update tool' }));
+      throw new Error(error.detail || 'Failed to update tool');
+    }
     return response.json();
   },
 
   // Delete a tool
   async deleteTool(id: string): Promise<void> {
     const response = await fetch(`${API_BASE}/tools/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: getAuthHeaders()
     });
 
-    if (!response.ok) throw new Error('Failed to delete tool');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to delete tool' }));
+      throw new Error(error.detail || 'Failed to delete tool');
+    }
   }
 };
 
@@ -59,9 +84,15 @@ export const reviewsAPI = {
     if (status) params.append('status', status);
     
     const url = `${API_BASE}/reviews${params.toString() ? '?' + params.toString() : ''}`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
     
-    if (!response.ok) throw new Error('Failed to fetch reviews');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to fetch reviews' }));
+      throw new Error(error.detail || 'Failed to fetch reviews');
+    }
     return response.json();
   },
 
@@ -69,11 +100,14 @@ export const reviewsAPI = {
   async submitReview(reviewData: { tool_id: string; rating: number; comment: string }): Promise<Review> {
     const response = await fetch(`${API_BASE}/reviews`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(reviewData)
     });
 
-    if (!response.ok) throw new Error('Failed to submit review');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to submit review' }));
+      throw new Error(error.detail || 'Failed to submit review');
+    }
     return response.json();
   },
 
@@ -81,11 +115,14 @@ export const reviewsAPI = {
   async moderateReview(id: string, status: string): Promise<Review> {
     const response = await fetch(`${API_BASE}/reviews/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ status })
     });
 
-    if (!response.ok) throw new Error('Failed to moderate review');
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to moderate review' }));
+      throw new Error(error.detail || 'Failed to moderate review');
+    }
     return response.json();
   }
 };
