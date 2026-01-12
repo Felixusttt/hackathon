@@ -1,7 +1,7 @@
-// src/components/ToolCard.tsx
+// src/components/ToolCard.tsx (Updated)
 
 import React from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Trash2, Eye } from 'lucide-react';
 import { Tool } from '../types';
 import StarRating from './StarRating';
 
@@ -11,6 +11,7 @@ interface ToolCardProps {
   onEdit: (tool: Tool) => void;
   onDelete: (id: string) => void;
   onReview: (tool: Tool) => void;
+  onViewReviews: (tool: Tool) => void; // New prop
 }
 
 const ToolCard: React.FC<ToolCardProps> = ({ 
@@ -18,7 +19,8 @@ const ToolCard: React.FC<ToolCardProps> = ({
   isAdmin, 
   onEdit, 
   onDelete, 
-  onReview 
+  onReview,
+  onViewReviews // New prop
 }) => {
   return (
     <div className="stagger-animation bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 border border-gray-100 hover:border-blue-200 transform hover:-translate-y-2">
@@ -55,10 +57,16 @@ const ToolCard: React.FC<ToolCardProps> = ({
         <span className="text-sm font-medium text-gray-700 px-3 py-1 bg-gray-100 rounded-full">
           {tool.pricing_model}
         </span>
-        <div className="flex items-center gap-2">
+        <button
+          onClick={() => onViewReviews(tool)}
+          className="flex items-center gap-2 hover:bg-blue-50 px-2 py-1 rounded-lg transition-colors group"
+        >
           <StarRating rating={Math.round(tool.average_rating)} interactive={false} />
-          <span className="text-sm text-gray-600">({tool.review_count})</span>
-        </div>
+          <span className="text-sm text-gray-600 group-hover:text-blue-600 transition-colors">
+            ({tool.review_count})
+          </span>
+          <Eye className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" />
+        </button>
       </div>
 
       {!isAdmin && (

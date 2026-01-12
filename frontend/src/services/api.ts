@@ -88,6 +88,7 @@ export const reviewsAPI = {
       method: 'GET',
       headers: getAuthHeaders()
     });
+
     
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: 'Failed to fetch reviews' }));
@@ -124,5 +125,19 @@ export const reviewsAPI = {
       throw new Error(error.detail || 'Failed to moderate review');
     }
     return response.json();
-  }
-};
+  },
+
+   async getToolReviews(toolId: string): Promise<Review[]> {
+    const response = await fetch(`${API_BASE}/reviews?tool_id=${toolId}&status=approved`, {
+      method: 'GET',
+      headers: getAuthHeaders()
+    });
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: 'Failed to fetch tool reviews' }));
+      throw new Error(error.detail || 'Failed to fetch tool reviews');
+    }
+    return response.json();
+  },
+}
+

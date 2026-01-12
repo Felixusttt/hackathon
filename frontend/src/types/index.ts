@@ -18,6 +18,7 @@ export interface Review {
   comment: string;
   status: string;
   date: string;
+  user_id?: string;
 }
 
 export interface Filters {
@@ -36,4 +37,9 @@ export interface ToolForm {
 export interface ReviewForm {
   rating: number;
   comment: string;
+}
+
+export interface ReviewWithUser extends Review {
+  user_name?: string;
+  user_email?: string;
 }

@@ -14,6 +14,7 @@ import FiltersPanel from './components/FiltersPanel';
 import ToolCard from './components/ToolCard';
 import ToolModal from './components/ToolModal';
 import ReviewModal from './components/ReviewModal';
+import ReviewHistoryModal from './components/ReviewHistoryModal';
 import ReviewModeration from './components/ReviewModeration';
 
 const App: React.FC = () => {
@@ -55,6 +56,13 @@ const App: React.FC = () => {
     comment: ''
   });
 
+  const [showReviewHistory, setShowReviewHistory] = useState<boolean>(false);
+  const [reviewHistoryTool, setReviewHistoryTool] = useState<Tool | null>(null);
+
+    const handleViewReviews = (tool: Tool) => {
+  setReviewHistoryTool(tool);
+  setShowReviewHistory(true);
+};
   // Check if user is already logged in on mount
   useEffect(() => {
     const checkAuth = async () => {
@@ -364,16 +372,17 @@ const App: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tools.map((tool) => (
                   <ToolCard
-                    key={tool.id}
-                    tool={tool}
-                    isAdmin={isAdmin}
-                    onEdit={(t) => setEditingTool({ ...t })}
-                    onDelete={handleDeleteTool}
-                    onReview={(t) => {
-                      setSelectedTool(t);
-                      setShowReview(true);
-                    }}
-                  />
+  key={tool.id}
+  tool={tool}
+  isAdmin={isAdmin}
+  onEdit={(t) => setEditingTool({ ...t })}
+  onDelete={handleDeleteTool}
+  onReview={(t) => {
+    setSelectedTool(t);
+    setShowReview(true);
+  }}
+  onViewReviews={handleViewReviews} // Add this prop
+/>
                 ))}
               </div>
             )}
@@ -433,6 +442,15 @@ const App: React.FC = () => {
           }}
         />
       )}
+      {showReviewHistory && reviewHistoryTool && (
+  <ReviewHistoryModal
+    tool={reviewHistoryTool}
+    onClose={() => {
+      setShowReviewHistory(false);
+      setReviewHistoryTool(null);
+    }}
+  />
+)}
     </div>
   );
 };

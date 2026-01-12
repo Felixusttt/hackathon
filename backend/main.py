@@ -305,21 +305,23 @@ async def create_review(
 @app.get("/api/reviews", response_model=List[models.ReviewResponse])
 async def get_reviews(
     tool_id: Optional[str] = None,
-    status: Optional[str] = None,
-    current_user: dict = Depends(get_current_admin_user)
+    status: Optional[str] = "approved",
+    current_user: dict = Depends(get_current_user)  # ✅ NOT admin-only
 ):
-    """Get all reviews with optional filters (Admin only)"""
     db = get_database()
     query_filter = {}
-    
+
+    # Normal users can ONLY see approved reviews
+    if status != "approved" and current_user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to view these reviews")
+
     if tool_id:
         if not ObjectId.is_valid(tool_id):
             raise HTTPException(status_code=400, detail="Invalid tool ID")
         query_filter["tool_id"] = tool_id
-    
-    if status:
-        query_filter["status"] = status
-    
+
+    query_filter["status"] = status
+
     reviews = await db.reviews.find(query_filter).to_list(length=None)
     return [review_helper(review) for review in reviews]
 
